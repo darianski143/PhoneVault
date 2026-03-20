@@ -1,0 +1,15 @@
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: phonevault-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: 7355608
+      MARIADB_DATABASE: phonevault
+    ports:
+      - "3308:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+volumes:
+  mariadb_data:
