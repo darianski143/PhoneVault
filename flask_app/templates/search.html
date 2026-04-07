@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% set title = "Search" %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1>Search</h1>
+      <p class="muted">Cauta dacă exista un record.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <form method="post" class="form">
+      <label>Table</label>
+      <select name="table">
+        {% for t, cfg in site_cfg.items() %}
+          <option value="{{ t }}">{{ cfg["title"] }} ({{ t }})</option>
+        {% endfor %}
+      </select>
+
+      <label>Field</label>
+      <input name="field" placeholder="ex: username / sku / id">
+
+      <label>Value</label>
+      <input name="value" placeholder="ex: admin / SKU-001 / 1">
+
+      <div class="actions">
+        <button class="btn" type="submit">Search</button>
+      </div>
+    </form>
+
+    {% if result %}
+      <hr style="margin:16px 0; opacity:.2;">
+      {% if result.ok %}
+        <p>Există în <b>{{ result.table }}</b> unde <b>{{ result.field }}</b> = <b>{{ result.value }}</b> ?</p>
+        <p><b>{{ "DA" if result.exists else "NU" }}</b></p>
+      {% else %}
+        <p class="muted">Eroare: {{ result.error }}</p>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}

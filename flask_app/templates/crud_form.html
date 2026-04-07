@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% set title = table_cfg["title"] ~ " - " ~ ("Create" if mode=="create" else "Edit") %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1>{{ table_cfg["title"] }} • {{ "Create" if mode=="create" else "Edit" }}</h1>
+      <p class="muted">
+        {% if mode=="create" %}
+          Completeaza campurile necesare pentru a adauga o noua inregistrare in PhoneVault.
+        {% else %}
+          Modifica doar campurile permise si salveaza schimbarile.
+        {% endif %}
+      </p>
+    </div>
+    <a class="btn btn-ghost" href="{{ url_for('crud_list', table=table) }}">Back</a>
+  </div>
+
+  <div class="panel">
+    <form method="post" class="form">
+      {% for f in fields %}
+        <label for="field_{{ f }}">{{ f.replace('_', ' ')|title }}</label>
+
+        {% if fk_options and f in fk_options %}
+          <select id="field_{{ f }}" name="{{ f }}" required>
+            <option value="">-- Selecteaza --</option>
+            {% for val, label in fk_options[f] %}
+              <option value="{{ val }}"
+                {% if values.get(f)|string == val|string %}selected{% endif %}>
+                {{ label }}{% if val != label %} (ID: {{ val }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+
+        {% elif choices and f in choices %}
+          <select id="field_{{ f }}" name="{{ f }}" required>
+            <option value="">-- Selecteaza --</option>
+            {% for opt in choices[f] %}
+              <option value="{{ opt }}" {% if values.get(f) == opt %}selected{% endif %}>{{ opt }}</option>
+            {% endfor %}
+          </select>
+
+        {% else %}
+          {% set input_type = 'text' %}
+          {% if 'date' in f %}
+            {% set input_type = 'date' %}
+          {% elif 'year' in f or 'stock' in f or 'quantity' in f or f.endswith('_id') %}
+            {% set input_type = 'number' %}
+          {% elif 'price' in f or 'amount' in f or 'total' in f %}
+            {% set input_type = 'number' %}
+          {% elif 'email' in f %}
+            {% set input_type = 'email' %}
+          {% endif %}
+
+          <input
+            id="field_{{ f }}"
+            type="{{ input_type }}"
+            name="{{ f }}"
+            value="{{ values.get(f, '') }}"
+            placeholder="{{ f }}"
+            {% if input_type == 'number' and ('price' in f or 'amount' in f or 'total' in f) %}step="0.01"{% endif %}
+            required>
+        {% endif %}
+      {% endfor %}
+
+      <div class="actions">
+        <button class="btn" type="submit">{{ "Create" if mode=="create" else "Save" }}</button>
+        <a class="btn btn-ghost" href="{{ url_for('crud_list', table=table) }}">Cancel</a>
+      </div>
+    </form>
+
+    {% if mode=="edit" %}
+      <p class="muted" style="margin-top:12px;">ID inregistrare: <b>{{ rec_id }}</b></p>
+    {% endif %}
+  </div>
+{% endblock %}

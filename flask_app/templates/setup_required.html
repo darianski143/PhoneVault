@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% set title = "Setup required" %}
+
+{% block content %}
+  <div class="panel warning">
+    <h1>Setup required</h1>
+    <p>Baza de date PhoneVault nu este initializata corect sau tabelele principale nu exista inca.</p>
+    <p>Ruleaza mai intai scripturile pentru creare tabele si inserare date demo, apoi reporneste aplicatia Flask.</p>
+    <p>Daca vrei doar un test rapid al interfetei, poti adauga un brand demonstrativ folosind butonul de mai jos.</p>
+    <a class="btn" href="{{ url_for('seed_demo') }}">Creeaza date demo</a>
+  </div>
+{% endblock %}

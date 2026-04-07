@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page">
+  <div class="page-head">
+    <h1>SQL Injection Lab</h1>
+    <p class="muted">Comută între <b>UNSAFE</b> (concatenează string) și <b>SAFE</b> (parametrizat). Vezi SQL-ul + rezultatul.</p>
+  </div>
+
+  <div class="card">
+    <form id="labForm" class="grid">
+      <div class="field">
+        <label>Table</label>
+        <select name="table" id="tableSel">
+          {% for t in tables %}
+            <option value="{{t.name}}">{{t.title}} ({{t.name}})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Field</label>
+        <select name="field" id="fieldSel"></select>
+      </div>
+
+      <div class="field">
+        <label>Value</label>
+        <input name="value" id="valueInp" placeholder="ex: admin / SKU-001 / 1" />
+      </div>
+
+      <div class="field">
+        <label>Mode</label>
+        <select name="mode" id="modeSel">
+          <option value="safe">SAFE (parameterized)</option>
+          <option value="unsafe">UNSAFE (string concat)</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn primary">Run query</button>
+        <button type="button" id="clearBtn" class="btn">Clear</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="split">
+      <div>
+        <h3>Generated SQL</h3>
+        <pre class="code" id="sqlOut">—</pre>
+      </div>
+      <div>
+        <h3>Status</h3>
+        <div id="statusOut" class="status muted">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Result</h3>
+    <div class="table-wrap">
+      <table class="table" id="resTable">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const TABLES = {{ tables|tojson }};
+  const tableSel = document.getElementById("tableSel");
+  const fieldSel = document.getElementById("fieldSel");
+  const form = document.getElementById("labForm");
+  const sqlOut = document.getElementById("sqlOut");
+  const statusOut = document.getElementById("statusOut");
+  const resTable = document.getElementById("resTable");
+  const clearBtn = document.getElementById("clearBtn");
+
+  function setFieldsForTable(tableName) {
+    const t = TABLES.find(x => x.name === tableName);
+    fieldSel.innerHTML = "";
+    (t?.fields || []).forEach(f => {
+      const opt = document.createElement("option");
+      opt.value = f;
+      opt.textContent = f;
+      fieldSel.appendChild(opt);
+    });
+  }
+
+  function renderTable(columns, rows) {
+    const thead = resTable.querySelector("thead");
+    const tbody = resTable.querySelector("tbody");
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+
+    const trh = document.createElement("tr");
+    columns.forEach(c => {
+      const th = document.createElement("th");
+      th.textContent = c;
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+
+    rows.forEach(r => {
+      const tr = document.createElement("tr");
+      r.forEach(v => {
+        const td = document.createElement("td");
+        td.textContent = (v === null || v === undefined) ? "" : String(v);
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  tableSel.addEventListener("change", () => setFieldsForTable(tableSel.value));
+  setFieldsForTable(tableSel.value);
+
+  clearBtn.addEventListener("click", () => {
+    sqlOut.textContent = "—";
+    statusOut.textContent = "—";
+    statusOut.className = "status muted";
+    resTable.querySelector("thead").innerHTML = "";
+    resTable.querySelector("tbody").innerHTML = "";
+    document.getElementById("valueInp").value = "";
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+
+    statusOut.textContent = "Running...";
+    statusOut.className = "status muted";
+
+    const resp = await fetch("/api/sqli/query", { method: "POST", body: fd });
+    const data = await resp.json();
+
+    if (!data.ok) {
+      sqlOut.textContent = data.sql || "—";
+      statusOut.textContent = "Error: " + (data.error || "unknown");
+      statusOut.className = "status error";
+      renderTable([], []);
+      return;
+    }
+
+    sqlOut.textContent = data.sql;
+    statusOut.textContent = `OK • mode=${data.mode} • rows=${data.count}`;
+    statusOut.className = data.mode === "unsafe" ? "status warn" : "status ok";
+    renderTable(data.columns, data.rows);
+  });
+</script>
+
+{% endblock %}

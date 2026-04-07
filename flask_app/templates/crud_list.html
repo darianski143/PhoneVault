@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% set title = table_cfg["title"] %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1>{{ table_cfg["title"] }}</h1>
+      <p class="muted">Vizualizare si gestionare inregistrari pentru tabelul selectat din PhoneVault.</p>
+    </div>
+    <a class="btn" href="{{ url_for('crud_create', table=table) }}">+ Create</a>
+  </div>
+
+  {% if rows %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {% for c in cols %}
+              <th>{{ c.replace('_', ' ')|title }}</th>
+            {% endfor %}
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+            <tr>
+              {% for v in r %}
+                <td>{{ v }}</td>
+              {% endfor %}
+              <td class="actions-col">
+                {% if table_cfg["update_fields"]|length > 0 %}
+                  <a class="btn btn-ghost" href="{{ url_for('crud_edit', table=table, rec_id=r[0]) }}">Edit</a>
+                {% else %}
+                  <span class="muted">Edit N/A</span>
+                {% endif %}
+
+                <form method="post"
+                      action="{{ url_for('crud_delete', table=table, rec_id=r[0]) }}"
+                      onsubmit="return confirm('Stergi inregistrarea #' + '{{ r[0] }}' + ' ?');">
+                  <button class="btn btn-danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="panel">
+      <p>Nu exista inregistrari in acest tabel momentan.</p>
+      <a class="btn" href="{{ url_for('crud_create', table=table) }}">Adauga prima inregistrare</a>
+    </div>
+  {% endif %}
+{% endblock %}
