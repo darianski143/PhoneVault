@@ -55,3 +55,22 @@ CREATE TABLE IF NOT EXISTS customer_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
+CREATE TABLE IF NOT EXISTS sale_orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    store_id INT NOT NULL,
+    customer_id INT NOT NULL,
+    sale_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (store_id) REFERENCES stores(id),
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+CREATE TABLE IF NOT EXISTS sale_order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sale_order_id INT NOT NULL,
+    phone_id INT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    line_total DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (sale_order_id) REFERENCES sale_orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (phone_id) REFERENCES phones(id)
+);
