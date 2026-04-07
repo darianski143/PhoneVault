@@ -14,17 +14,23 @@
     </div>
 
     <nav class="nav">
-      <a href="{{ url_for('index') }}">Dashboard</a>
-      <a href="{{ url_for('search') }}">Search</a>
+      <a href="{{ url_for('index') }}">dashboard</a>
+      <a href="{{ url_for('search') }}">search</a>
       <div class="nav-sep"></div>
 
       {% for t, c in site_cfg.items() %}
-        <a href="{{ url_for('crud_list', table=t) }}">{{ c["title"] }}</a>
+        <a href="{{ url_for('crud_list', table=t) }}">{{ t }}</a>
       {% endfor %}
     </nav>
   </header>
 
   <main class="container">
+    <div class="shellbar">
+      <span class="shellbar-label">context</span>
+      <span class="shellbar-path">/phonevault/{{ title|default('dashboard')|lower|replace(' ', '_') }}</span>
+      <span class="shellbar-state">flask://127.0.0.1:5000</span>
+    </div>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="flash-wrap">
@@ -39,7 +45,7 @@
   </main>
 
   <footer class="footer">
-    <span>PhoneVault • Flask + MariaDB</span>
+    <span>[ phonevault ] flask + mariadb + crud</span>
   </footer>
 </body>
 </html>

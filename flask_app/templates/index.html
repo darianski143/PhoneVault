@@ -2,59 +2,63 @@
 {% set title = "Dashboard" %}
 
 {% block content %}
-  <div class="dash-hero">
-    <div class="dash-hero-left">
-      <div class="chip">Proiect PhoneVault</div>
-      <h1 class="dash-title">Dashboard</h1>
-      <p class="dash-sub">
-        Alege un tabel si gestioneaza datele din aplicatie.
-      </p>
-
-      {% if not ready %}
-        <div class="panel warning" style="margin-top:14px;">
-          <p><b>Setup necesar:</b> baza de date PhoneVault nu este initializata complet.</p>
-          <a class="btn" href="{{ url_for('seed_demo') }}">Creeaza date demo</a>
-        </div>
-      {% endif %}
-    </div>
-
-    <div class="dash-hero-right">
-      <div class="statbox">
-        <div class="statbox-top">
-          <div class="statbox-label">Total tabele</div>
-          <div class="statbox-value">{{ site_cfg|length }}</div>
-        </div>
-        <div class="statbox-hint">Structura detectata din CRUD_CONFIG</div>
-      </div>
-
-      <div class="statbox">
-        <div class="statbox-top">
-          <div class="statbox-label">Ready</div>
-          <div class="statbox-value">{{ "YES" if ready else "NO" }}</div>
-        </div>
-        <div class="statbox-hint">Exista tabelele principale pentru PhoneVault</div>
-      </div>
+  <div class="page-head">
+    <div>
+      <h1>dashboard</h1>
+      <p class="muted">Control panel pentru administrarea tabelelor din PhoneVault.</p>
     </div>
   </div>
 
-  <div class="dash-grid">
-    {% for t, cfg in site_cfg.items() %}
-      <a class="dash-card" href="{{ url_for('crud_list', table=t) }}">
-        <div class="dash-card-top">
-          <div class="dash-card-title">{{ cfg["title"] }}</div>
-          <div class="dash-card-pill">{{ t }}</div>
-        </div>
+  <div class="panel" style="margin-bottom:12px;">
+    <div class="dash-meta">
+      <div class="dash-meta-block">
+        <div class="dash-meta-label">project</div>
+        <div class="dash-meta-value">phonevault</div>
+      </div>
 
-        <div class="dash-card-mid">
-          <div class="dash-count">{{ counts[t] }}</div>
-          <div class="dash-count-label">records</div>
-        </div>
+      <div class="dash-meta-block">
+        <div class="dash-meta-label">tables</div>
+        <div class="dash-meta-value">{{ site_cfg|length }}</div>
+      </div>
 
-        <div class="dash-card-btm">
-          <span class="dash-open">Open →</span>
-          <span class="dash-mini">List / Create / Edit / Delete</span>
+      <div class="dash-meta-block">
+        <div class="dash-meta-label">status</div>
+        <div class="dash-meta-value {{ 'is-ready' if ready else 'is-not-ready' }}">
+          {{ 'READY' if ready else 'SETUP REQUIRED' }}
         </div>
-      </a>
-    {% endfor %}
+      </div>
+    </div>
+
+    {% if not ready %}
+      <div class="panel warning" style="margin-top:12px;">
+        <p><b>Setup necesar:</b> baza de date PhoneVault nu este initializata complet.</p>
+        <a class="btn" href="{{ url_for('seed_demo') }}">seed demo</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <div class="section-title">registered tables</div>
+
+    <div class="dash-list">
+      {% for t, cfg in site_cfg.items() %}
+        <a class="dash-row" href="{{ url_for('crud_list', table=t) }}">
+          <div class="dash-row-main">
+            <div class="dash-row-name">{{ t }}</div>
+            <div class="dash-row-desc">{{ cfg["title"] }}</div>
+          </div>
+
+          <div class="dash-row-stats">
+            <div class="dash-row-count">{{ counts[t] }}</div>
+            <div class="dash-row-count-label">rows</div>
+          </div>
+
+          <div class="dash-row-actions">
+            <span class="dash-row-tag">crud</span>
+            <span class="dash-row-open">open →</span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
   </div>
 {% endblock %}
