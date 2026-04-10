@@ -3,6 +3,8 @@ from scripts.create_tables import create_tables
 
 print("Stergem tabelele existente (daca exista)")
 
+run_execute("DROP TABLE IF EXISTS sale_order_items;")
+run_execute("DROP TABLE IF EXISTS sale_orders;")
 run_execute("DROP TABLE IF EXISTS customer_log;")
 run_execute("DROP TABLE IF EXISTS sales;")
 run_execute("DROP TABLE IF EXISTS specifications;")
