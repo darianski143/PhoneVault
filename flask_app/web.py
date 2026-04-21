@@ -1,11 +1,17 @@
+import os
 import sys
 from pathlib import Path
+
+from cryptography.fernet import Fernet
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from app.db import run_select, run_execute
+
+FERNET_KEY = os.getenv("PHONEVAULT_FERNET_KEY")
+fernet = Fernet(FERNET_KEY.encode()) if FERNET_KEY else None
 
 app = Flask(__name__)
 app.secret_key = "dev-secret"
@@ -37,9 +43,9 @@ CRUD_CONFIG = {
     "customers": {
         "pk": "id",
         "title": "Customers",
-        "create_fields": ["first_name", "last_name", "email", "phone_number"],
-        "update_fields": ["first_name", "last_name", "email", "phone_number"],
-        "list_fields": ["id", "first_name", "last_name", "email", "phone_number"],
+        "create_fields": ["first_name", "last_name", "username", "email", "phone_number", "password_hash"],
+        "update_fields": ["first_name", "last_name", "username", "email", "phone_number", "password_hash"],
+        "list_fields": ["id", "first_name", "last_name", "username", "email", "phone_number", "password_hash", "created_at"],
         "default_sort": "id DESC",
         "children": [
             {"table": "sale_orders", "fk": "customer_id"},
@@ -118,6 +124,29 @@ def record_exists(table, field, value):
     return bool(run_select(q, (value,)))
 
 
+def encrypt_phone_value(value):
+    if not value:
+        return value
+    if str(value).startswith("gAAAAA"):
+        return value
+    if not fernet:
+        return value
+    return fernet.encrypt(str(value).encode()).decode()
+
+
+def decrypt_phone_value(value):
+    if not value:
+        return value
+    if not str(value).startswith("gAAAAA"):
+        return value
+    if not fernet:
+        return value
+    try:
+        return fernet.decrypt(str(value).encode()).decode()
+    except Exception:
+        return value
+
+
 def fetch_list(table):
     cfg = ensure_table_allowed(table)
     pk = cfg["pk"]
@@ -126,6 +155,17 @@ def fetch_list(table):
         cols = [pk] + [c for c in cols if c != pk]
     q = f"SELECT {', '.join(cols)} FROM {table} ORDER BY {cfg.get('default_sort', pk + ' DESC')};"
     rows = run_select(q)
+
+    if table == "customers" and "phone_number" in cols:
+        phone_idx = cols.index("phone_number")
+        rows = [
+            tuple(
+                decrypt_phone_value(cell) if idx == phone_idx else cell
+                for idx, cell in enumerate(row)
+            )
+            for row in rows
+        ]
+
     return cols, rows
 
 
@@ -135,7 +175,16 @@ def fetch_by_id(table, rec_id):
     cols = list(dict.fromkeys([pk] + cfg["list_fields"] + cfg["create_fields"] + cfg["update_fields"]))
     q = f"SELECT {', '.join(cols)} FROM {table} WHERE {pk}=%s LIMIT 1;"
     rows = run_select(q, (rec_id,))
-    return cols, (rows[0] if rows else None)
+    row = rows[0] if rows else None
+
+    if row and table == "customers" and "phone_number" in cols:
+        phone_idx = cols.index("phone_number")
+        row = tuple(
+            decrypt_phone_value(cell) if idx == phone_idx else cell
+            for idx, cell in enumerate(row)
+        )
+
+    return cols, row
 
 
 def build_fk_options(cfg):
@@ -158,7 +207,21 @@ def insert_record(table, form):
         v = (form.get(f) or "").strip()
         if v == "":
             raise ValueError(f"Camp obligatoriu lipsa: {f}")
+
+        if table == "customers" and f == "phone_number":
+            v = encrypt_phone_value(v)
+
         values.append(v)
+
+    if table == "customers" and "password_hash" in fields:
+        pwd_idx = fields.index("password_hash")
+        pwd_val = values[pwd_idx]
+        if not str(pwd_val).startswith("$2b$"):
+            try:
+                import bcrypt
+                values[pwd_idx] = bcrypt.hashpw(str(pwd_val).encode(), bcrypt.gensalt()).decode()
+            except Exception:
+                pass
 
     for f, v in zip(fields, values):
         if f.endswith("_id") and "fk_dropdowns" in cfg and f in cfg["fk_dropdowns"]:
@@ -184,8 +247,22 @@ def update_record(table, rec_id, form):
         v = (form.get(f) or "").strip()
         if v == "":
             raise ValueError(f"Camp obligatoriu lipsa: {f}")
+
+        if table == "customers" and f == "phone_number":
+            v = encrypt_phone_value(v)
+
         pairs.append(f"{f}=%s")
         values.append(v)
+
+    if table == "customers" and "password_hash" in fields:
+        pwd_idx = fields.index("password_hash")
+        pwd_val = values[pwd_idx]
+        if not str(pwd_val).startswith("$2b$"):
+            try:
+                import bcrypt
+                values[pwd_idx] = bcrypt.hashpw(str(pwd_val).encode(), bcrypt.gensalt()).decode()
+            except Exception:
+                pass
 
     for f, v in zip(fields, values):
         if f.endswith("_id") and "fk_dropdowns" in cfg and f in cfg["fk_dropdowns"]:

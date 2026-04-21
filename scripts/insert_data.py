@@ -13,6 +13,18 @@ NUM_LOGS = 150
 
 print("Pornim generarea datelor pentru PhoneVault...")
 
+# curatam datele existente ca scriptul sa poata fi rulat de mai multe ori
+print("Stergem datele existente...")
+run_execute("DELETE FROM customer_log;")
+run_execute("DELETE FROM sale_order_items;")
+run_execute("DELETE FROM sale_orders;")
+run_execute("DELETE FROM sales;")
+run_execute("DELETE FROM specifications;")
+run_execute("DELETE FROM phones;")
+run_execute("DELETE FROM customers;")
+run_execute("DELETE FROM stores;")
+run_execute("DELETE FROM brands;")
+
 # -------------------------
 # 1. BRANDS
 # -------------------------
@@ -54,20 +66,30 @@ for i in range(NUM_STORES):
 # -------------------------
 print("Inseram clienti...")
 
+admin_password_plain = "admin123"
+
 run_execute(
-    "INSERT INTO customers (first_name, last_name, email, phone_number) VALUES (%s, %s, %s, %s);",
-    ("Admin", "Client", "admin@phonevault.ro", "0700000000")
+    """
+    INSERT INTO customers (first_name, last_name, username, email, phone_number, password_hash)
+    VALUES (%s, %s, %s, %s, %s, %s);
+    """,
+    ("Admin", "Client", "admin", "admin@phonevault.ro", "0700000000", admin_password_plain)
 )
 
 for i in range(NUM_CUSTOMERS):
     first_name = fake.first_name()
     last_name = fake.last_name()
+    username = f"{fake.user_name()}{random.randint(1, 9999)}"
     email = f"{fake.user_name()}{random.randint(1, 9999)}@mail.com"
     phone = f"07{random.randint(10000000, 99999999)}"
+    password_plain = f"parola{random.randint(1000, 9999)}"
 
     run_execute(
-        "INSERT INTO customers (first_name, last_name, email, phone_number) VALUES (%s, %s, %s, %s);",
-        (first_name, last_name, email, phone)
+        """
+        INSERT INTO customers (first_name, last_name, username, email, phone_number, password_hash)
+        VALUES (%s, %s, %s, %s, %s, %s);
+        """,
+        (first_name, last_name, username, email, phone, password_plain)
     )
 
 # -------------------------
